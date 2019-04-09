@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: views/baseinfo/GoodsList.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: views/baseinfo/GoodsList.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define([
+    "dojo/_base/declare",
+    "mobile/widgets/MessageDialog",
+    "mobile/widgets/AlertDialog",
+    "mobile/store/request",
+    "mobile/views/bill0/BillHelper",
+    "mobile/widgets/ConfirmDialog",
+    "mobile/utils/tools",
+    "mobile/store/config",
+    "../BaseInfo"
+], function (declare, MessageDialog, AlertDialog, request, BillHelper, ConfirmDialog, tools, config, BaseInfo) {
+    return declare([BaseInfo], {
+        init: function () {
+            this.inherited(arguments);
+            this.vueContent = this.addVue({
+                el: this.vuePageEl,
+                mixins: BaseInfo.vueMixins,
+                data: function () {
+                    var param = this.getParam() || {};
+                    var cfg = config.getErpCfg(this.$view); //系统配置
+                    var cg = config.getCurentUser();
+                    return {
+                        title: "商品列表",
+                        editorViewName: "GoodsEditor",
+                        filterName: "GoodsListFilter",
+                        pk: "gid",
+                        enable_cbqx: cfg.ViewCost &amp;&amp; cfg.EnablePresetPrice, //成本权限,预设进价也控制进货价是否显示
+                        enable_retailprice: cfg.EnableRetailPrice,
+                        enable_tradeprice: cfg.EnableTradePrice, //批发价是否启用
+                        enable_mall: cg.EnableB2B || cg.EnableB2C,
+                        "reportparam": {
+                            "pagerow": 20,
+                            "pagenumber": 0,
+                            "pagetype": "erp",
+                            "parid": 0
+                        },
+                        "conditionparam": {
+                            "bastype": "goods",
+                            "keywords": param.keywords || "",
+                            "showtree": true,
+                            "showline": false,
+                            "showstopstatus": -1,
+                            "showstop": -1,
+                            "brand": '',
+                            "brandid": '',
+                            "brandname": '',
+                            "brandfullname": ''
+                        }
+                    }
+                },
+                methods: {
+                    setProperty: function (goodsid, flag) {
+                        var _this = this;
+                        request('cc.erp.bll.bas.goods.setproperty', {
+                            gid: goodsid,
+                            isputon: flag,
+                            type: 'setputon'
+                        }, false, this.$view).then(function (ret) {
+                            MessageDialog(ret &amp;&amp; ret.msg || '操作成功', function () {
+                                //_this.finish({ isReload: true });
+                                _this.doQuery();
+                            })
+                        }, function (ret) { //错误
+                            var msg = BillHelper.getPostErrorMsg(ret);
+                            AlertDialog(msg, _this.$view);
+                        });
+                    },
+                    onPreviewClick: function (data) {
+                        this.startView("GoodsPreview", {
+                            goodsId: data[this.pk]
+                        });
+                    },
+                    setEnableClick: function (row, flag) {
+                        if (flag) {
+                            var self = this;
+                            ConfirmDialog({ msg: "确定停用该商品?", okText: "继续操作", cancelText: "返回" }, function () {
+                                self.doEnableClick(row);
+                            }, self);
+
+                        } else {
+                            this.doEnableClick(row);
+                        }
+                    },
+                    doEnableClick: function (row) {
+                        var method = "cc.erp.bll.bas.baseinfomanager.setenable";
+                        var self = this;
+                        row.flag = !row.flag;
+                        request(method, { data: row, bastype: "goods" }).then(function (ret) {
+                            self.doQuery();
+                        }, this.$view.onLoadDataError);
+                    },
+                    onShareClick: function (data) {
+                        var title = "商品【" + data.fullname + "】分享";
+                        var description = "【" + data.fullname + "】";
+                        var defaultimg = "http://img1.lk361.cn/applogo.png";
+                        var imgUrl = data.imgurl == "" ? defaultimg : data.imgurl;
+                        var url = "";
+                        var goodsid = data.gid;
+                        request("CC.ERP.BLL.DH.Baseinfo.B2B2CSettings.GetStoresAndQR", {}).then(function (result) //微信信息
+                        {
+                            url += result.wxdomain;
+                            url += "/Mall/Detail?goodsId=" + goodsid;
+                            tools.onShare(title, description, imgUrl, url);
+                        },
+                            function (err) {
+                                _this.$view.showMsg("分享失败");
+                            })
+                    },
+                    /**
+                    * 点击目录去到下级
+                    * **/
+                    onParentClickClick: function (row) {
+                        this.reportparam.parid = row.gid || 0;
+                        this.reportparam.pagenumber = 0;
+                        this.doQuery();
+                    },
+                    doQuery: function () {
+                        this.conditionparam.showstop = this.conditionparam.showstopstatus;
+                        this.conditionparam.brand = this.conditionparam.brandid;
+                        this.conditionparam.brandname = this.conditionparam.brandfullname;
+                        this.inherited(arguments);
+                    },
+                }
+            })
+        }
+    })
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-_BaseInfo.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseInfo.vueMixins" vue 混合对象</a></li><li><a href="module-_FilterBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"FilterBase.vueMixins" vue 混合对象</a></li><li><a href="module-_QueryBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"QueryBase.vueMixins" vue 混合对象</a></li><li><a href="module-_ViewBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"ViewBase.vueMixins" vue 混合对象</a></li><li><a href="module-BaseInfo%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseInfo vue 页面</a></li><li><a href="module-FilterBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">FilterBase vue 页面</a></li><li><a href="module-ListStore%2520%25E5%2588%2586%25E9%25A1%25B5%25E6%2595%25B0%25E6%258D%25AE%25E6%25BA%2590.html">ListStore 分页数据源</a></li><li><a href="module-QueryBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">QueryBase vue 页面</a></li><li><a href="module-VArrow%2520%25E7%25AE%25AD%25E5%25A4%25B4.html">VArrow 箭头</a></li><li><a href="module-VAvatar%2520%25E5%25A4%25B4%25E5%2583%258F%25E3%2580%2581%25E5%259B%25BE%25E7%2589%2587.html">VAvatar 头像、图片</a></li><li><a href="module-VButton%2520%25E6%258C%2589%25E9%2592%25AE.html">VButton 按钮</a></li><li><a href="module-VCalendar%2520%25E6%2597%25A5%25E5%258E%2586.html">VCalendar 日历</a></li><li><a href="module-VCheckBox%2520%25E5%25A4%258D%25E9%2580%2589%25E6%25A1%2586.html">VCheckBox 复选框</a></li><li><a href="module-VCol%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%2588%2597.html">VCol 栅格布局 列</a></li><li><a href="module-VContainer%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%25AE%25B9%25E5%2599%25A8.html">VContainer 栅格布局 容器</a></li><li><a href="module-VDateNav%2520%25E6%2597%25A5%25E6%259C%259F%25E5%25AF%25BC%25E8%2588%25AA.html">VDateNav 日期导航</a></li><li><a href="module-VFieldSet%2520%25E5%25AD%2597%25E6%25AE%25B5%25E7%25BB%2584.html">VFieldSet 字段组</a></li><li><a href="module-VFlexBox%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AE%25B9%25E5%2599%25A8.html">VFlexBox flex 布局容器</a></li><li><a href="module-VFlexItem%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AD%2590%25E9%25A1%25B9.html">VFlexItem flex 布局子项</a></li><li><a href="module-VFromRow%2520%25E8%25A1%25A8%25E5%258D%2595%25E8%25A1%258C.html">VFromRow 表单行</a></li><li><a href="module-VHeader%2520%25E6%25A0%2587%25E9%25A2%2598%25E6%25A0%258F.html">VHeader 标题栏</a></li><li><a href="module-VIcon%2520%25E5%259B%25BE%25E6%25A0%2587.html">VIcon 图标</a></li><li><a href="module-ViewBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">ViewBase vue 页面</a></li><li><a href="module-VList%2520%25E5%2588%2597%25E8%25A1%25A8.html">VList 列表</a></li><li><a href="module-VListitem%2520%25E5%2588%2597%25E8%25A1%25A8%25E9%25A1%25B9.html">VListitem 列表项</a></li><li><a href="module-VMap%2520%25E5%259C%25B0%25E5%259B%25BE.html">VMap 地图</a></li><li><a href="module-VMenuGroups%2520%25E8%258F%259C%25E5%258D%2595%25E5%2588%2586%25E7%25BB%2584.html">VMenuGroups 菜单分组</a></li><li><a href="module-VPage%2520%25E9%25A1%25B5.html">VPage 页</a></li><li><a href="module-VRatio%2520%25E7%25AD%2589%25E6%25AF%2594%25E4%25BE%258B%25E7%25BC%25A9%25E6%2594%25BE%25E5%25AE%25B9%25E5%2599%25A8.html">VRatio 等比例缩放容器</a></li><li><a href="module-VRetinaImage%2520%25E6%258C%2587%25E4%25BB%25A4.html">VRetinaImage 指令</a></li><li><a href="module-VRow%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E8%25A1%258C.html">VRow 栅格布局 行</a></li><li><a href="module-VScrollView%2520%25E6%25BB%259A%25E5%258A%25A8%25E8%25A7%2586%25E5%259B%25BE.html">VScrollView 滚动视图</a></li><li><a href="module-VSearchBar%2520%25E6%2590%259C%25E7%25B4%25A2%25E6%25A0%258F.html">VSearchBar 搜索栏</a></li><li><a href="module-VSearchBrand%2520%25E5%2593%2581%25E7%2589%258Csearch.html">VSearchBrand 品牌search</a></li><li><a href="module-VSearchClerk%2520%25E7%25BB%258F%25E6%2589%258B%25E4%25BA%25BAsearch.html">VSearchClerk 经手人search</a></li><li><a href="module-VSearchDealer%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealer 往来单位search</a></li><li><a href="module-VSearchDealerForReport%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealerForReport 往来单位search</a></li><li><a href="module-VSearchDeals%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDeals 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E5%2595%2586%25E5%2593%2581search.html">VSearchDepartment 商品search</a></li><li><a href="module-VSearchDepartment%2520%25E9%2583%25A8%25E9%2597%25A8search.html">VSearchDepartment 部门search</a></li><li><a href="module-VSearchStock%2520%25E4%25BB%2593%25E5%25BA%2593search.html">VSearchStock 仓库search</a></li><li><a href="module-VSelect%2520%25E4%25B8%258B%25E6%258B%2589%25E6%25A1%2586.html">VSelect 下拉框</a></li><li><a href="module-VSubtext%2520%25E4%25BA%258C%25E7%25BA%25A7%25E6%2596%2587%25E6%259C%25AC.html">VSubtext 二级文本</a></li><li><a href="module-VSwitch%2520%25E5%25BC%2580%25E5%2585%25B3.html">VSwitch 开关</a></li><li><a href="module-VTabs%2520%25E9%25A1%25B5%25E7%25AD%25BE.html">VTabs 页签</a></li><li><a href="module-VText%2520%25E6%2596%2587%25E6%259C%25AC.html">VText 文本</a></li><li><a href="module-VToolBar%2520%25E5%25B7%25A5%25E5%2585%25B7%25E6%25A0%258F.html">VToolBar 工具栏</a></li><li><a href="module-VTree%2520%25E6%25A0%2591%25E5%25BD%25A2.html">VTree 树形</a></li></ul><h3>Classes</h3><ul><li><a href="Sortable.html">Sortable</a></li></ul><h3>Mixins</h3><ul><li><a href="CoverMixin.html">CoverMixin</a></li><li><a href="flexItemMixin.html">flexItemMixin</a></li><li><a href="SearchMixin.html">SearchMixin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#props">props</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Sep 13 2018 11:00:04 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

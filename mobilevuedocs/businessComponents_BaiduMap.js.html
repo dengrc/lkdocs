@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: businessComponents/BaiduMap.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: businessComponents/BaiduMap.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define([
+	"dojo/text!./BaiduMap.html",
+	"dojo/debounce",
+	"../npm/ResizeDetector",
+	"mobile/utils/tools",
+	"widget/baidumap/Map"
+], function(template, debounce, ResizeDetector, tools, Map) {
+	/**
+	 * @link http://lbsyun.baidu.com/cms/jsapi/reference/jsapi_reference.html
+	 */
+	var EVENTS = [
+		"click",
+		"dblclick",
+		"rightclick",
+		"rightdblclick",
+		"maptypechange",
+		"mousemove",
+		"mouseover",
+		"mouseout",
+		"movestart",
+		"moving",
+		"moveend",
+		"zoomstart",
+		"zoomend", 
+		"addoverlay",
+		"addcontrol",
+		"removecontrol", 
+		"removeoverlay", 
+		"clearoverlays",
+		"dragstart", 
+		"dragging", 
+		"dragend", 
+		"addtilelayer",
+		"removetilelayer", 
+		"load",
+		"resize",
+		"hotspotclick",
+		"hotspotover", 
+		"hotspotout", 
+		"tilesloaded",
+		"touchstart",
+		"touchmove",
+		"touchend",
+		"longpress",
+		/*一下自定义事件*/
+		//widget/baidumap/GeolocationControl
+        "location",
+        "location-click"
+	];
+	
+	/**
+	 * @author 邓如春 &lt;1107151332@qq.com>
+	 * @module VMap 地图
+	 * 
+	 * @description
+	 * ####	只是一个简单的 vue 包装
+	 * 
+	 * @example
+	 * &lt;v-map ref="map" lng="104.06719" lat="30.578899" zoom="15">&lt;/v-map>
+	 * 
+	 * @example
+	 * vm.$refs.map.baiduMap
+	 * vm.$refs.map.map
+	 */
+	return Vue.component('v-map', {
+		/**
+		 * Props 接受父组件的传值
+		 * @prop {(String|Number)}	[lng=104.06719]		经度
+		 * @prop {(String|Number)}	[lat=30.578899]		纬度
+		 * @prop {(String|Number)}	[zoom=15]			缩放级别
+		 * @prop {Boolean}			[geolocation=false]	定位控件
+		 * @prop {Boolean}			[navigation=false]	导航控件
+		 * @prop {Boolean}			[scale=false]		缩放控件
+		 */
+		props: {
+			lng: {
+				type: [Number, String],
+				"default": 104.06719
+			},
+			lat: {
+				type: [Number, String],
+				"default": 30.578899
+			},
+			zoom: {
+				type: [Number, String],
+				"default": 15
+			},
+			geolocation: {
+				type: Boolean
+			},
+			navigation: {
+				type: Boolean
+			},
+			scale: {
+				type: Boolean
+			}
+		},
+		mounted: function() {
+			var map = this.map = new Map();
+			Object.assign(map, {
+				domNode: this.$el,
+				centerPoint: new BMap.Point(this.lng, this.lat),
+				mapZoom: this.zoom,
+				mapShowNavigation: this.navigation,
+				mapShowGeolocation: this.geolocation,
+				mapShowScale: this.scale,
+				mapDelay: false
+			});
+			var _this=this;
+			EVENTS.forEach(function(event){
+                map.mapOn(event, function () {
+                    var args = [].slice.call(arguments);
+                    args.unshift(event);
+                    _this.$emit.apply(_this, args)
+				})
+			});
+            map.startup();
+			this.baiduMap = map.baiduMap;
+			setTimeout(function(){	
+				_this.$emit("mounted");
+			},50)
+		},
+		beforeDestroy: function() {
+			this.map.mapClearOverlay();
+			this.map.destroy();
+		},
+		data: function() {
+			return {
+				longitude: this.lng,
+				latitude: this.lat
+			}
+		},
+		methods: {
+
+		},
+		watch: {
+			lng: function(value) {
+				this.longitude = value;
+				//this.centerAndZoom();
+			},
+			lat: function(value) {
+				this.latitude = value;
+				//this.centerAndZoom();
+			}
+		},
+		template: template
+	})
+})</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-_BaseEditor.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseEditor.vueMixins" vue 混合对象</a></li><li><a href="module-_BaseInfo.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseInfo.vueMixins" vue 混合对象</a></li><li><a href="module-_FilterBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"FilterBase.vueMixins" vue 混合对象</a></li><li><a href="module-_QueryBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"QueryBase.vueMixins" vue 混合对象</a></li><li><a href="module-_ViewBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"ViewBase.vueMixins" vue 混合对象</a></li><li><a href="module-BaseEditor%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseEditor vue 页面</a></li><li><a href="module-BaseInfo%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseInfo vue 页面</a></li><li><a href="module-FilterBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">FilterBase vue 页面</a></li><li><a href="module-ListStore%2520%25E5%2588%2586%25E9%25A1%25B5%25E6%2595%25B0%25E6%258D%25AE%25E6%25BA%2590.html">ListStore 分页数据源</a></li><li><a href="module-QueryBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">QueryBase vue 页面</a></li><li><a href="module-VArrow%2520%25E7%25AE%25AD%25E5%25A4%25B4.html">VArrow 箭头</a></li><li><a href="module-VAvatar%2520%25E5%25A4%25B4%25E5%2583%258F%25E3%2580%2581%25E5%259B%25BE%25E7%2589%2587.html">VAvatar 头像、图片</a></li><li><a href="module-VButton%2520%25E6%258C%2589%25E9%2592%25AE.html">VButton 按钮</a></li><li><a href="module-VCalendar%2520%25E6%2597%25A5%25E5%258E%2586.html">VCalendar 日历</a></li><li><a href="module-VCheckBox%2520%25E5%25A4%258D%25E9%2580%2589%25E6%25A1%2586.html">VCheckBox 复选框</a></li><li><a href="module-VCol%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%2588%2597.html">VCol 栅格布局 列</a></li><li><a href="module-VContainer%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%25AE%25B9%25E5%2599%25A8.html">VContainer 栅格布局 容器</a></li><li><a href="module-VDateNav%2520%25E6%2597%25A5%25E6%259C%259F%25E5%25AF%25BC%25E8%2588%25AA.html">VDateNav 日期导航</a></li><li><a href="module-VFieldSet%2520%25E5%25AD%2597%25E6%25AE%25B5%25E7%25BB%2584.html">VFieldSet 字段组</a></li><li><a href="module-VFlexBox%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AE%25B9%25E5%2599%25A8.html">VFlexBox flex 布局容器</a></li><li><a href="module-VFlexItem%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AD%2590%25E9%25A1%25B9.html">VFlexItem flex 布局子项</a></li><li><a href="module-VFromRow%2520%25E8%25A1%25A8%25E5%258D%2595%25E8%25A1%258C.html">VFromRow 表单行</a></li><li><a href="module-VHeader%2520%25E6%25A0%2587%25E9%25A2%2598%25E6%25A0%258F.html">VHeader 标题栏</a></li><li><a href="module-VIcon%2520%25E5%259B%25BE%25E6%25A0%2587.html">VIcon 图标</a></li><li><a href="module-ViewBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">ViewBase vue 页面</a></li><li><a href="module-VList%2520%25E5%2588%2597%25E8%25A1%25A8.html">VList 列表</a></li><li><a href="module-VListitem%2520%25E5%2588%2597%25E8%25A1%25A8%25E9%25A1%25B9.html">VListitem 列表项</a></li><li><a href="module-VMap%2520%25E5%259C%25B0%25E5%259B%25BE.html">VMap 地图</a></li><li><a href="module-VMenuGroups%2520%25E8%258F%259C%25E5%258D%2595%25E5%2588%2586%25E7%25BB%2584.html">VMenuGroups 菜单分组</a></li><li><a href="module-VPage%2520%25E9%25A1%25B5.html">VPage 页</a></li><li><a href="module-VPopover.html">VPopover</a></li><li><a href="module-VRadio%2520%25E5%258D%2595%25E9%2580%2589.html">VRadio 单选</a></li><li><a href="module-VRatio%2520%25E7%25AD%2589%25E6%25AF%2594%25E4%25BE%258B%25E7%25BC%25A9%25E6%2594%25BE%25E5%25AE%25B9%25E5%2599%25A8.html">VRatio 等比例缩放容器</a></li><li><a href="module-VRetinaImage%2520%25E6%258C%2587%25E4%25BB%25A4.html">VRetinaImage 指令</a></li><li><a href="module-VRow%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E8%25A1%258C.html">VRow 栅格布局 行</a></li><li><a href="module-VScrollView%2520%25E6%25BB%259A%25E5%258A%25A8%25E8%25A7%2586%25E5%259B%25BE.html">VScrollView 滚动视图</a></li><li><a href="module-VSearchBar%2520%25E6%2590%259C%25E7%25B4%25A2%25E6%25A0%258F.html">VSearchBar 搜索栏</a></li><li><a href="module-VSearchBrand%2520%25E5%2593%2581%25E7%2589%258Csearch.html">VSearchBrand 品牌search</a></li><li><a href="module-VSearchClerk%2520%25E7%25BB%258F%25E6%2589%258B%25E4%25BA%25BAsearch.html">VSearchClerk 经手人search</a></li><li><a href="module-VSearchDealer%252520%2525E5%2525BE%252580%2525E6%25259D%2525A5%2525E5%25258D%252595%2525E4%2525BD%25258Dsearch.html">VSearchDealer 往来单位search</a></li><li><a href="module-VSearchDealerForReport%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealerForReport 往来单位search</a></li><li><a href="module-VSearchDealerType%2520%25E5%25AE%25A2%25E6%2588%25B7%25E7%25BA%25A7%25E5%2588%25ABsearch.html">VSearchDealerType 客户级别search</a></li><li><a href="module-VSearchDeals%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDeals 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E5%2595%2586%25E5%2593%2581search.html">VSearchDepartment 商品search</a></li><li><a href="module-VSearchDepartment%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDepartment 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E9%2583%25A8%25E9%2597%25A8search.html">VSearchDepartment 部门search</a></li><li><a href="module-VSearchStock%2520%25E4%25BB%2593%25E5%25BA%2593search.html">VSearchStock 仓库search</a></li><li><a href="module-VSelect%2520%25E4%25B8%258B%25E6%258B%2589%25E6%25A1%2586.html">VSelect 下拉框</a></li><li><a href="module-VSimpleDialog%2520%25E6%25A8%25A1%25E6%2580%2581%25E6%25A1%2586.html">VSimpleDialog 模态框</a></li><li><a href="module-VSubtext%2520%25E4%25BA%258C%25E7%25BA%25A7%25E6%2596%2587%25E6%259C%25AC.html">VSubtext 二级文本</a></li><li><a href="module-VSwitch%2520%25E5%25BC%2580%25E5%2585%25B3.html">VSwitch 开关</a></li><li><a href="module-VTabs%2520%25E9%25A1%25B5%25E7%25AD%25BE.html">VTabs 页签</a></li><li><a href="module-VText%2520%25E6%2596%2587%25E6%259C%25AC.html">VText 文本</a></li><li><a href="module-VToolBar%2520%25E5%25B7%25A5%25E5%2585%25B7%25E6%25A0%258F.html">VToolBar 工具栏</a></li><li><a href="module-VTree%2520%25E6%25A0%2591%25E5%25BD%25A2.html">VTree 树形</a></li></ul><h3>Classes</h3><ul><li><a href="Sortable.html">Sortable</a></li></ul><h3>Mixins</h3><ul><li><a href="CoverMixin.html">CoverMixin</a></li><li><a href="flexItemMixin.html">flexItemMixin</a></li><li><a href="SearchMixin.html">SearchMixin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#onFilterClick">onFilterClick</a></li><li><a href="global.html#props">props</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Mar 28 2019 11:13:45 GMT+0800 (GMT+08:00)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

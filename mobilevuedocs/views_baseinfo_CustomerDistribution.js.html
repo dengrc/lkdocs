@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: views/baseinfo/CustomerDistribution.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: views/baseinfo/CustomerDistribution.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define([
+    "dojo/_base/declare",
+    "../QueryBase",
+    "mobile/store/request",
+    "mobile/store/config",
+    "mobile/utils/tools",
+    "dojo/debounce",
+    "dojo/Deferred",
+    "biz/lkstore/ConstData",
+    "mobile/utils/DateHelper",
+    "widget/baidumap/GroupOverlay",
+    "widget/baidumap/CustomerOverlay"
+], function (declare, QueryBase, request, config, tools, debounce, Deferred, ConstData, DateHelper, GroupOverlay, CustomerOverlay) {
+    return declare([QueryBase], {
+        init: function () {
+            this.inherited(arguments);
+
+            var labelTypeFields = [
+                "default",
+                "customertypeLabel",
+                "salemoneyLabel",
+                "armoneyLabel",
+                "customLabel1",
+                "customLabel2",
+                "customLabel3"
+            ];
+
+            this.vueContent = this.addVue({
+                el: this.vuePageEl,
+                mixins: QueryBase.vueMixins,
+                target: "cc.erp.bll.bas.baseinfomanager.gecustomerdistributiontlist",
+                data: function () {
+                    var param = this.getParam() || {};
+                    var erpConfig = config.getErpCfg();
+
+                    var labelSelectData = [];
+
+                    if (erpConfig.EnableCustomertypeLabel) {
+                        labelSelectData.push({
+                            label: "客户级别",
+                            value: "customertypeLabel"
+                        });
+                    }
+                    if (erpConfig.EnableSalemoneyLabel) {
+                        labelSelectData.push({
+                            label: "销售金额",
+                            value: "salemoneyLabel"
+                        });
+                    }
+                    if (erpConfig.EnableArtotalLabel) {
+                        labelSelectData.push({
+                            label: "应收金额",
+                            value: "armoneyLabel"
+                        });
+                    }
+                    if (erpConfig.EnableCustom1Label) {
+                        labelSelectData.push({
+                            label: erpConfig.CustomerUserlabel1,
+                            value: "customLabel1"
+                        });
+                    }
+                    if (erpConfig.EnableCustom2Label) {
+                        labelSelectData.push({
+                            label: erpConfig.CustomerUserlabel2,
+                            value: "customLabel2"
+                        });
+                    }
+                    if (erpConfig.EnableCustom3Label) {
+                        labelSelectData.push({
+                            label: erpConfig.CustomerUserlabel3,
+                            value: "customLabel3"
+                        });
+                    }
+                    labelSelectData.push({
+                        label: "默认颜色",
+                        value: "default"
+                    });
+
+                    return {
+                        title: "客户分布",
+                        filterName: "CustomerDistributionFilter",
+                        isbigimg: false,
+                        bigimg: "",
+                        overlayOptions: {
+                            color: labelTypeFields[erpConfig.DefaultLabelType],
+                            title: true,
+                            star: true,
+                            bills: [0]
+                        },
+                        labelSelectData: labelSelectData,
+                        appbillconfig: ConstData.appbillconfig.filter(function (item) {
+                            return config.hasPower(item.billtype, 14, this.$view)
+                        }, this.$view),
+                        locationMenus: [{
+                            power: config.hasPower(111, 9, this.$view),
+                            viewname: "CustomerEditor",
+                            name: "新增"
+                        }, {
+                            power: config.hasPower(111, 11, this.$view),
+                            viewname: "CustomerList",
+                            name: "关联"
+                        }].filter(function (menu) {
+                            return menu.power
+                        }),
+                        //点击客户数据
+                        customerDetails: {},
+                        //控制客户明细 显示状态
+                        customerOptions: {
+                            show: false,
+                            expand: false,
+                            more: false,
+                            scrollTop: 0
+                        },
+                        "reportparam": {
+                            "pagerow": 20,
+                            "pagenumber": 0,
+                            "pagetype": "erp",
+                            "parid": 0
+                        },
+                        "conditionparam": {
+                            //地图参数
+                            mwidth: 0,
+                            mheight: 0,
+                            zoomlevel: 13,
+                            northeast: null,
+                            southwest: null,
+                            //关键字
+                            keywords: "",
+                            //筛选参数
+                            visibleSalemoneyLabel: erpConfig.EnableSalemoneyLabel,
+                            visibleArtotalLabel: erpConfig.EnableArtotalLabel,
+                            visibleCustomerLabel1: erpConfig.EnableCustom1Label,
+                            visibleCustomerLabel2: erpConfig.EnableCustom2Label,
+                            visibleCustomerLabel3: erpConfig.EnableCustom3Label,
+                            customerUserName1: erpConfig.CustomerUserlabel1,
+                            customerUserName2: erpConfig.CustomerUserlabel2,
+                            customerUserName3: erpConfig.CustomerUserlabel3,
+                            beginlasttracktime: "",
+                            endlasttracktime: "",
+                            beginlasttradedate: "",
+                            endlasttradedate: "",
+                            dealertypeid: "",
+                            dealertypename: "",
+                            salemoneyid: "",
+                            salemoneyname: "",
+                            artotalid: "",
+                            artotalname: "",
+                            customerlabelid1: "",
+                            customerlabelname1: "",
+                            customerlabelid2: "",
+                            customerlabelname2: "",
+                            customerlabelid3: "",
+                            customerlabelname3: "",
+                            salemoneyareas: [],
+                            armoneyareas: [],
+                            trackValue: 0,
+                            tradeValue: 0
+                        }
+                    }
+                },
+                computed: {
+                    popoverBills: function () {
+                        var bills = this.appbillconfig.filter(function (item) {
+                            return this.overlayOptions.bills.indexOf(item.id) > -1;
+                        }, this);
+                        return bills.length ? bills : this.appbillconfig;
+                    }
+                },
+                methods: {
+                    canLeave: function () {
+                        if (this.customerOptions.expand) {
+                            this.toggleCustomerInfo();
+                            return false;
+                        }
+                        return this.inherited(arguments)
+                    },
+                    onStart: function () {
+						/**
+						 * 获取标签颜色，处理结果数据
+						 */
+                        this.defAllColor = request("cc.erp.bll.bas.customerlabel.GetAllLabelColor", {}, false, this.$view).then(function (rst) {
+                            var dict = {
+                                customertypeLabel: {}
+                            };
+
+                            //id 索引
+                            ["customLabel1", "customLabel2", "customLabel3"].forEach(function (key) {
+                                dict[key] = {};
+                                rst[key].forEach(function (row) {
+                                    dict[key][row.lid] = row
+                                })
+                            });
+
+                            //minmoney 排序
+                            ["armoneyLabel", "salemoneyLabel"].forEach(function (key) {
+                                dict[key] = rst[key].sort(function (a, b) {
+                                    return a.minmoney >= b.minmoney
+                                })
+                            });
+
+                            rst.customertypeLabel.forEach(function (row) {
+                                dict.customertypeLabel[row.dealertypeid] = row
+                            });
+                            return dict
+                        });
+                        this.defLoaction = new Deferred();
+
+                        //获取操作员的客户分布配置
+                        var opcfg = config.getAppOpCfg(this.$view, false, 12, 125);
+                        if (opcfg) {
+                            Object.assign(this.overlayOptions, opcfg)
+                        }
+                    },
+					/**
+					 * 查询时 加上一些地图信息
+					 * @param {Object} isReload
+					 */
+                    doQuery: function (isReload) {
+                        var mapSize = this.baiduMap.getSize();
+                        var bounds = this.baiduMap.getBounds();
+
+                        Object.assign(this.conditionparam, {
+                            mwidth: mapSize.width,
+                            mheight: mapSize.height,
+                            zoomlevel: this.baiduMap.getZoom(),
+                            northeast: JSON.stringify(bounds.getNorthEast()),
+                            southwest: JSON.stringify(bounds.getSouthWest())
+                        });
+                        if (isReload) {
+                            this.reload()
+                        } else {
+                            this.inherited(arguments);
+                        }
+                    },
+					/**
+					 * 获取数据后过滤无效的坐标，添加字段
+					 * @param {Object} data
+					 */
+                    dataHandler: function (data) {
+                        data.datasource = data.datasource.filter(function (item) {
+                            item.distance = "";
+                            return !(item.lat > 90 &amp;&amp; item.lng > 180)
+                        }).map(function (item) {
+                            item.distance = "";
+                            return {
+                                detail: item,
+                                point: {
+                                    lat: item.lat,
+                                    lng: item.lng
+                                },
+                                title: item.iscluster ? item.pointscount : item.dfullname
+                            }
+                        });
+                        return data
+                    },
+					/**
+					 * 获取数据后绘制可视点
+					 * @param {Object} result
+					 */
+                    onQueryResult: function (result) {
+                        this.customersAllInfo = result.datasource;
+                        this.drawCustomersOverlay(this.getVisibleCustomers())
+                    },
+					/**
+					 * 获取当前数据中在地图可视范围的客户信息
+					 */
+                    getVisibleCustomers: function () {
+                        if (!this._mapMounted || !this.customersAllInfo) {
+                            return []
+                        }
+                        var bounds = this.baiduMap.getBounds();
+                        var northEast = bounds.getNorthEast();
+                        var southWest = bounds.getSouthWest();
+                        return this.customersAllInfo.filter(function (item) {
+                            return item.point.lng > southWest.lng &amp;&amp; item.point.lng &lt; northEast.lng &amp;&amp; item.point.lat > southWest.lat &amp;&amp; item.point.lat &lt; northEast.lat
+                        }, this)
+                    },
+					/**
+					 * 地图移动完成
+					 */
+                    onMapMoveend: debounce(function () {
+                        this.drawCustomersOverlay(this.getVisibleCustomers())
+                    }, 200),
+					/**
+					 * 地图缩放完成
+					 */
+                    onMapZoomend: debounce(function () {
+                        if (this._mapMounted) {
+                            this.doQuery()
+                        }
+                    }, 200),
+					/**
+					 * 地图显示到页面
+					 */
+                    onMapMounted: function () {
+                        this.map = this.$refs.map.map;
+                        this.baiduMap = this.$refs.map.baiduMap;
+                        this.currentOverlayZIndex = 0;
+                        var _this = this;
+                        this.defLoaction.then(function () {
+                            _this._mapMounted = true;
+                            _this.doQuery(true)
+                        })
+                    },
+					/**
+					 * 地图定位成功
+					 */
+                    onMapLocation: function () {
+                        //if (!this.baiduMap) {
+                        //    this.$view &amp;&amp; this.$view.showMsg("地图资源加载失败,请检查网络重新打开!");
+                        //    return;
+                        //}
+                        tools.onLocation(function (result) {
+                            result.point = new BMap.Point(result.lng, result.lat);
+                            this.locationResult = result;
+                            if (this.locationMarker) {
+                                this.baiduMap.removeOverlay(this.locationMarker);
+                            }
+                            this.locationMarker = new BMap.Marker(result.point);
+                            this.baiduMap.panTo(result.point, {
+                                noAnimation: !this._mapMounted
+                            });
+                            this.defLoaction.resolve(result);
+                            if (this.locationMenus.length) {
+                                this.locationMarker.addEventListener("click", function (e) {
+                                    e.domEvent.stopPropagation();
+                                    this.$refs.locationPopover.show(e.domEvent)
+                                }.bind(this));
+                            }
+                            this.baiduMap.addOverlay(this.locationMarker);
+                        }.bind(this), function () {
+
+                        });
+                    },
+                    onMapClick: function (e) {
+                        this.delayHideCustomerInfo()
+                    },
+					/**
+					 * 清除驾驶线路
+					 */
+                    clearDriverLing: function () {
+                        if (this.currentDriving) {
+                            this.currentDriving.clearResults();
+                        }
+                    },
+					/**
+					 * 自动驾驶路线
+					 */
+                    driverTo: function (ps, pe, address) {
+                        if (!tools.onOpenMapNav(pe, address)) { //如果打开地图失败，那么就在本地导致
+                            if (!this.currentDriving) {
+                                this.currentDriving = new BMap.DrivingRoute(this.baiduMap, {
+                                    renderOptions: {
+                                        map: this.baiduMap,
+                                        autoViewport: true
+                                    }
+                                });
+                            }
+                            this.clearDriverLing();
+                            this.currentDriving.search(ps, pe);
+                        }
+                    },
+					/**
+					 * 路线规划
+					 */
+                    onDetailRoute: function () {
+                        var fromPoint = new BMap.Point(this.locationResult.point.lng, this.locationResult.point.lat);
+                        var endPoint = new BMap.Point(this.customerDetails.lng, this.customerDetails.lat);
+                        this.driverTo(fromPoint, endPoint, this.customerDetails.address);
+
+                        this.toggleCustomerInfo(false);
+                        //this.filterdetail.hide();
+                    },
+					/**
+					 * 页面结束
+					 */
+                    onEnd: function () {
+                        this._mapMounted = false
+                    },
+					/**
+					 * copy 配置
+					 */
+                    onSettingsClick: function () {
+                        this._copyOverlayOptions = JSON.parse(JSON.stringify(this.overlayOptions));
+                        this.$refs.dialog.show()
+                    },
+					/**
+					 * 还原配置
+					 */
+                    onDialogCancel: function () {
+                        Object.assign(this.overlayOptions, this._copyOverlayOptions)
+                    },
+					/**
+					 * 重新画点
+					 */
+                    onDialogOk: function () {
+                        //保存操作员的客户分布配置
+                        config.saveAppOpCfg(this.$view, this.overlayOptions, null, 12, 125);
+                        this.drawCustomersOverlay(this.getVisibleCustomers())
+                    },
+					/**
+					 * 显示星时，名字也显示
+					 * @param {Object} value
+					 */
+                    onShowStar: function (value) {
+                        if (value) {
+                            this.overlayOptions.title = value
+                        }
+                    },
+					/**
+					 * 隐藏
+					 * @param {Object} value
+					 */
+                    onShowTitle: function (value) {
+                        if (!value) {
+                            this.overlayOptions.star = value
+                        }
+                    },
+					/**
+					 * 隐藏客户信息
+					 */
+                    hideCustomerInfo: function () {
+                        this.customerOptions.show = false;
+                        this.customerOptions.expand = false;
+                        this.customerOptions.more = false;
+                        this.customerDetails = {};
+                    },
+                    delayHideCustomerInfo: function () {
+                        this._delayHide = setTimeout(function () {
+                            this.hideCustomerInfo()
+                        }.bind(this), 100)
+                    },
+					/**
+					 * 显示客户信息
+					 */
+                    showCustomerInfo: function () {
+                        clearTimeout(this._delayHide);
+                        this.customerOptions.show = true;
+                        if (!this.customerOptions.expand) {
+                            //数据与 DOM 节点不是时时映射，所以需要在这个回调中计算与 DOM 相关信息
+                            this.$nextTick(function () {
+                                this.customerMinHeight = this.customerHeight = this.$refs.customerHeader.$el.clientHeight;
+                                this.$refs.customerContent.$el.style.height = this.customerHeight + 'px';
+                                this.customerOptions.more = true;
+                            })
+                        }
+                    },
+					/**
+					 * 展开、折叠客户信息
+					 * @param {Boolean} [expand] 默认当前值取反
+					 */
+                    toggleCustomerInfo: function (expand) {
+                        if (this.moveing) {
+                            return
+                        }
+                        if (typeof expand === "undefined") {
+                            expand = !this.customerOptions.expand;
+                        }
+                        this.moveing = true;
+                        this.$refs.customerContent.$el.style.transition = "height 0.3s ease";
+                        this.$refs.customerContent.$el.style.height = (expand ? this.customerMaxHeight : this.customerMinHeight) + 'px';
+                        var _this = this;
+                        setTimeout(function () {
+                            _this.moveing = false;
+                            _this.$refs.customerContent.$el.style.transition = "";
+                            _this.customerOptions.expand = expand;
+                            _this.$refs.customerScrollView.scrollTop = 0;
+                        }, 300)
+                    },
+                    onCustomerScroll: function (e) {
+                        this.customerOptions.scrollTop = e.target.scrollTop;
+                    },
+					/**
+					 * 实现滑动，记录开始状态
+					 * @param {Object} e
+					 */
+                    onCustomerTouchStart: function (e) {
+                        if (this.moveing) {
+                            return
+                        }
+                        this.customerStartHeight = this.$refs.customerContent.$el.clientHeight;
+                        this.customerMaxHeight = this.$refs.content.$el.clientHeight - this.$refs.customerTabs.$el.clientHeight;
+                    },
+					/**
+					 * 实现滑动，改变高度
+					 * @param {Object} e
+					 */
+                    onCustomerTouchMove: function (e) {
+                        if (this.moveing) {
+                            e.preventDefault();
+                            return
+                        }
+                        if (this.customerOptions.expand &amp;&amp; Math.abs(this.customerMaxHeight - this.customerHeight) > 3) {
+                            e.preventDefault();
+                        }
+                        if (Math.abs(this.customerStartHeight - this.customerMaxHeight) &lt; 1 &amp;&amp; this.$refs.customerScrollView.scrollTop != 0) {
+                            return
+                        }
+                        if (!this.touchY) {
+                            this.touchY = e.targetTouches[0].pageY
+                        }
+                        var moveY = this.touchY - e.targetTouches[0].pageY;
+                        if (Math.abs(moveY) &lt; 15) {
+                            return
+                        }
+                        this.moved = true;
+                        this.customerHeight = Math.min(this.customerMaxHeight, Math.max(this.customerMinHeight, this.customerStartHeight + moveY));
+                        this.$refs.customerContent.$el.style.height = this.customerHeight + 'px';
+                    },
+					/**
+					 * 去到当前客户签到列表页面
+					 * **/
+                    onSignInfoMore: function () {
+                        this.startView("CrmSignInfolist", {
+                            billid: 0,
+                            billtype: 0,
+                            dinfo: {
+                                did: this.customerDetails.did,
+                                dfullname: this.customerDetails.dfullname
+                            }
+                        });
+                    },
+                    ///**
+                    // * 当前客户的更多跟进信息
+                    // * **/
+                    //onVisitInfoMore: function () {
+                    //    this.startView("CrmSignInfolist", { billid: 0, billtype: 0, dinfo: { did: this.customerDetails.did, dfullname: this.customerDetails.dfullname } });
+                    //},
+					/**
+					 * 实现滑动，根据结束状态执行 展开、折叠
+					 * @param {Object} e
+					 */
+                    onCustomerTouchEnd: function (e) {
+                        if (this.moveing || this.$refs.customerScrollView.scrollTop != 0 || !this.moved) {
+                            return
+                        }
+
+                        this.touchY = 0;
+                        this.moved = false;
+                        var isTop = Math.abs(this.customerStartHeight - this.customerMaxHeight) &lt; 1;
+                        var expand = isTop &amp;&amp; this.customerMaxHeight - this.customerHeight &lt; 15 || !isTop &amp;&amp; this.customerHeight - this.customerMinHeight > 15;
+                        this.toggleCustomerInfo(expand)
+                    },
+					/**
+					 * 点击地图上的客户
+					 */
+                    onCustomerClick: function (customerData, overlay, e) {
+                        e.stopPropagation();
+                        var show = this.customerDetails !== customerData.detail
+                        if (!show) {
+                            this.hideCustomerInfo();
+                            return
+                        }
+                        this.customerDetails = customerData.detail;
+                        overlay.domNode.style.zIndex = this.currentOverlayZIndex++;
+                        var _this = this;
+                        if (!customerData.detail.distance) {
+                            var driving = new BMap.DrivingRoute(this.baiduMap, {
+                                onSearchComplete: function (rst) {
+                                    var plan = rst.getPlan(0);
+                                    customerData.detail.distance = plan &amp;&amp; plan.getDistance &amp;&amp; plan.getDistance(true) || "未知距离";
+                                    _this.showCustomerInfo();
+                                }
+                            })
+                            driving.search(this.locationResult.point, new BMap.Point(customerData.point.lng, customerData.point.lat));
+                        }
+                        this.showCustomerInfo();
+                        this.clearDriverLing();
+                    },
+					/**
+					 * 点击开单
+					 * @param {Object} e
+					 */
+                    onClickOpenBill: function (e) {
+                        if (this.appbillconfig.length === 0) {
+                            return
+                        }
+                        if (this.popoverBills.length > 1) {
+                            this.$refs.popover.show(e)
+                        } else {
+                            this.onBillClick(this.popoverBills[0])
+                        }
+                    },
+					/**
+					 * 点击单据名称开单
+					 * @param {Object} data
+					 */
+                    onBillClick: function (data) {
+                        this.$refs.popover &amp;&amp; this.$refs.popover.hide();
+                        var _this = this;
+                        request("cc.erp.bll.bas.baseinfomanager.getone", {
+                            data: {
+                                did: this.customerDetails.did
+                            },
+                            bastype: "customer"
+                        }, false).then(function (result) {
+                            var param = { billid: 0, billtype: data.billtype, hasDetail: true, detail: result.detail };
+                            if (data.billtype == 801) {
+                                param = { billid: 0, billtype: data.billtype, hasDetail: true, dealer: result.detail };
+                            }
+                            _this.startView(data.view, param);
+                        }, function (ret) {
+                            _this.$view.showMsg(ret);
+                        });
+                    },
+					/**
+					 * 点击新增、关联
+					 * @param {Object} data
+					 */
+                    onLocationMenu: function (data) {
+                        var address = this.locationResult.address || "";
+                        var lng = this.locationResult.lng || "";
+                        var lat = this.locationResult.lat || "";
+                        switch (data.viewname) {
+                            case "CustomerEditor":
+                                this.startView("CustomerEditor", {
+                                    type: "add",
+                                    isAddPower: 1,
+                                    hasAddress: true,
+                                    address: address,
+                                    lng: lng,
+                                    lat: lat
+                                });
+                                break;
+                            case "CustomerList":
+                                this.startView("CustomerList", {
+                                    billid: 0,
+                                    powertype: 1,
+                                    billtype: 42,
+                                    showment: 1,
+                                    shownav: false,
+                                    pv: 'menu_42',
+                                    hasAddress: true,
+                                    address: address,
+                                    lng: lng,
+                                    lat: lat
+                                });
+                                break;
+                        }
+                        this.$refs.locationPopover.hide();
+                    },
+					/**
+					 * 点击签到
+					 */
+                    onCheckInClick: function () {
+                        var param = {},
+                            detail = this.customerDetails;
+                        param.did = detail.did;
+                        param.dfullname = detail.dfullname;
+                        param.c_address = detail.address;
+                        this.startView("CrmCheckInEditor", {
+                            method: 'add',
+                            associatedcustomers: param,
+                            readOnly: true
+                        });
+                    },
+					/**
+					 * 点击拜访计划
+					 */
+                    onPlanClick: function () {
+                        var param = {
+                            optype: "add"
+                        },
+                            detail = this.customerDetails;
+                        param.did = detail.did;
+                        param.dfullname = detail.dfullname;
+                        this.startView("VisitPlanEdit", param)
+                    },
+					/**
+					 * 点击跳转客户详情页面
+					 * **/
+                    CheckCustomerInfo: function () {
+                        this.startView("VisitPlanCustomer", {
+                            optype: 'modify',
+                            data: {
+                                did: this.customerDetails.did,
+                                dnode: this.customerDetails.dnode
+                            }
+                        })
+                    },
+                    /**
+                     * 点击销售详情，跳转销售历史报表
+                     * **/
+                    onSaleDataClick: function () {
+                        var startDate = DateHelper.getDateRange(3).begindate;
+                        var endDate = DateHelper.getDateRange(3).enddate;
+                        this.startView("SaleHistoryReport", { "did": this.customerDetails.did, "dfullname": this.customerDetails.dfullname, "startdate": startDate, "enddate": endDate });
+                    },
+                    /**
+                     * 点击拜访计划去到拜访详情
+                     * **/
+                    onVisitDetailClick: function () {
+                        this.startView("VisitPlanEdit", {
+                            optype: "modify",
+                            id: this.customerDetails.visitid
+                        });
+                    },
+                    /**
+                     * 签到详情点击
+                     * **/
+                    onSignDetailClick: function () {
+                        var signinfo = {
+                            address: this.customerDetails.signaddress,
+                            c_address: this.customerDetails.c_address,
+                            cid: this.customerDetails.signcid,
+                            dfullname: this.customerDetails.dfullname,
+                            did: this.customerDetails.did,
+                            fullname: this.customerDetails.trackclerkname,
+                            id: this.customerDetails.signid,
+                            imgurl: this.customerDetails.signimgurl,
+                            lat: this.customerDetails.signlat,
+                            lng: this.customerDetails.signlng,
+                            remark: this.customerDetails.signremark,
+                            signtime: this.customerDetails.signtime,
+                            time: this.customerDetails.signtimerhour
+                        };
+                        this.startView("CrmCheckInEditor", signinfo);
+                    },
+                    /**
+                     * 延迟执行，等地图显示出来才能取到正确的地图参数
+                     */
+                    onViewResult: function () {
+                        var _this = this;
+                        var args = arguments;
+                        setTimeout(function () {
+                            _this.inherited(args);
+                        }, 100)
+                    },
+                    //客户图片放大
+                    imgdetail: function (url) {
+                        if (url != "") {
+                            this.bigimg = url;
+                            this.isbigimg = true;
+                        }
+                    },
+                    imgclose: function () {
+                        this.isbigimg = false;
+                    },
+					/**
+					 * 绘制客户点
+					 * @param {Object} customers
+					 */
+                    drawCustomersOverlay: function (customers) {
+                        this.map.mapRemoveOverlayByKey('group');
+                        this.map.mapRemoveOverlayByKey('customer');
+
+                        var options = this.overlayOptions;
+                        var colorIds = {
+                            "default": "default",
+                            "customertypeLabel": "dealertypeid",
+                            "customLabel1": "lid1",
+                            "customLabel2": "lid2",
+                            "customLabel3": "lid3"
+                        };
+                        var sortFields = {
+                            "armoneyLabel": "artotal",
+                            "salemoneyLabel": "salediscountmoney"
+                        };
+                        var colorId = colorIds[options.color];
+                        var sortField = sortFields[options.color];
+
+                        var _this = this;
+                        this.defAllColor.then(function (rst) {
+                            var clusterArray = [],
+                                customerArray = [];
+
+                            //customers.forEach(function (customerPointData, i) {
+                            //    customerPointData.detail.iscluster ? clusterArray.push(customerPointData) : customerArray.push(customerPointData)
+                            //})
+                            var onlyCluster = _this.conditionparam.zoomlevel &lt;= 13;
+                            customers.forEach(function (customerPointData, i) {
+                                if (customerPointData.detail.iscluster || onlyCluster) {
+                                    if (!customerPointData.detail.iscluster) {
+                                        customerPointData.title = "1";
+                                        customerPointData.detail.points = [];
+                                        customerPointData.detail.points.push(customerPointData.point);
+                                    }
+                                    clusterArray.push(customerPointData);
+                                } else {
+                                    customerArray.push(customerPointData);
+                                }
+                            })
+
+                            clusterArray.forEach(function (customerPointData) {
+                                var point = new BMap.Point(customerPointData.point.lng, customerPointData.point.lat);
+                                var group = new GroupOverlay(_this, point, customerPointData.title, customerPointData.detail);
+                                //var _this = this;
+                                group.on("click", function (e, widget, data, point) {
+                                    if (typeof data.points === "string") {
+                                        data.points = JSON.parse(data.points)
+                                    }
+                                    var points = [];
+                                    data.points.forEach(function (p) {
+                                        points.push(new BMap.Point(p.lng, p.lat))
+                                    });
+                                    _this.baiduMap.setViewport(points)
+                                }, false);
+                                _this.map.mapAddOverlay(group, "group");
+                            });
+
+                            var data = rst[options.color];
+                            var defaultData = {
+                                color: "#bbb",
+                                star: 0
+                            };
+
+                            if (sortField) {
+                                customerArray.sort(function (a, b) {
+                                    return a.detail[sortField] > b.detail[sortField]
+                                });
+                                var array = data.slice();
+
+                                function find(detail) {
+                                    if (array.length === 0 || detail[sortField] &lt; array[0].minmoney) {
+                                        return defaultData
+                                    }
+                                    if ((array.length === 1 &amp;&amp; detail[sortField] >= array[0].minmoney) || (detail[sortField] >= array[0].minmoney &amp;&amp; detail[sortField] &lt; array[1].minmoney)) {
+                                        return array[0]
+                                    } else {
+                                        detail[sortField] >= array[1].minmoney &amp;&amp; array.shift();
+                                        return find(detail)
+                                    }
+                                }
+                                customerArray.forEach(function (customerPointData) {
+                                    var d = find(customerPointData.detail);
+                                    if (d) {
+                                        customerPointData.detail._color = d.color;
+                                        customerPointData.detail._star = d.star;
+                                    }
+                                })
+                            } else {
+                                customerArray.forEach(function (customerPointData) {
+                                    if (colorId == "default") {
+                                        customerPointData.detail._color = defaultData.color;
+                                        customerPointData.detail._star = defaultData.star;
+                                    } else {
+                                        customerPointData.detail._color = (data[customerPointData.detail[colorId]] || defaultData).color;
+                                        customerPointData.detail._star = (data[customerPointData.detail[colorId]] || defaultData).star;
+                                    }
+                                })
+                            }
+                            customerArray.forEach(function (customerPointData) {
+                                var point = new BMap.Point(customerPointData.point.lng, customerPointData.point.lat);
+                                var customer = new CustomerOverlay({
+                                    context: _this,
+                                    showTitle: options.title,
+                                    showStar: options.star,
+                                    data: customerPointData.detail,
+                                    point: point,
+                                    //                                  width: 35,
+                                    //                                  height: 53,
+                                    type: options.title ? "customerOverlay" : "customerOverlayPoint",
+                                    title: customerPointData.title
+                                });
+                                customer.on("click", function (e) {
+                                    _this.onCustomerClick(customerPointData, customer, e)
+                                }, false);
+
+                                _this.map.mapAddOverlay(customer, "customer");
+                            });
+                        })
+                    }
+                }
+            })
+        }
+    })
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-_BaseEditor.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseEditor.vueMixins" vue 混合对象</a></li><li><a href="module-_BaseInfo.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseInfo.vueMixins" vue 混合对象</a></li><li><a href="module-_FilterBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"FilterBase.vueMixins" vue 混合对象</a></li><li><a href="module-_QueryBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"QueryBase.vueMixins" vue 混合对象</a></li><li><a href="module-_ViewBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"ViewBase.vueMixins" vue 混合对象</a></li><li><a href="module-BaseEditor%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseEditor vue 页面</a></li><li><a href="module-BaseInfo%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseInfo vue 页面</a></li><li><a href="module-FilterBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">FilterBase vue 页面</a></li><li><a href="module-ListStore%2520%25E5%2588%2586%25E9%25A1%25B5%25E6%2595%25B0%25E6%258D%25AE%25E6%25BA%2590.html">ListStore 分页数据源</a></li><li><a href="module-QueryBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">QueryBase vue 页面</a></li><li><a href="module-VArrow%2520%25E7%25AE%25AD%25E5%25A4%25B4.html">VArrow 箭头</a></li><li><a href="module-VAvatar%2520%25E5%25A4%25B4%25E5%2583%258F%25E3%2580%2581%25E5%259B%25BE%25E7%2589%2587.html">VAvatar 头像、图片</a></li><li><a href="module-VButton%2520%25E6%258C%2589%25E9%2592%25AE.html">VButton 按钮</a></li><li><a href="module-VCalendar%2520%25E6%2597%25A5%25E5%258E%2586.html">VCalendar 日历</a></li><li><a href="module-VCheckBox%2520%25E5%25A4%258D%25E9%2580%2589%25E6%25A1%2586.html">VCheckBox 复选框</a></li><li><a href="module-VCol%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%2588%2597.html">VCol 栅格布局 列</a></li><li><a href="module-VContainer%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%25AE%25B9%25E5%2599%25A8.html">VContainer 栅格布局 容器</a></li><li><a href="module-VDateNav%2520%25E6%2597%25A5%25E6%259C%259F%25E5%25AF%25BC%25E8%2588%25AA.html">VDateNav 日期导航</a></li><li><a href="module-VFieldSet%2520%25E5%25AD%2597%25E6%25AE%25B5%25E7%25BB%2584.html">VFieldSet 字段组</a></li><li><a href="module-VFlexBox%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AE%25B9%25E5%2599%25A8.html">VFlexBox flex 布局容器</a></li><li><a href="module-VFlexItem%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AD%2590%25E9%25A1%25B9.html">VFlexItem flex 布局子项</a></li><li><a href="module-VFromRow%2520%25E8%25A1%25A8%25E5%258D%2595%25E8%25A1%258C.html">VFromRow 表单行</a></li><li><a href="module-VHeader%2520%25E6%25A0%2587%25E9%25A2%2598%25E6%25A0%258F.html">VHeader 标题栏</a></li><li><a href="module-VIcon%2520%25E5%259B%25BE%25E6%25A0%2587.html">VIcon 图标</a></li><li><a href="module-ViewBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">ViewBase vue 页面</a></li><li><a href="module-VList%2520%25E5%2588%2597%25E8%25A1%25A8.html">VList 列表</a></li><li><a href="module-VListitem%2520%25E5%2588%2597%25E8%25A1%25A8%25E9%25A1%25B9.html">VListitem 列表项</a></li><li><a href="module-VMap%2520%25E5%259C%25B0%25E5%259B%25BE.html">VMap 地图</a></li><li><a href="module-VMenuGroups%2520%25E8%258F%259C%25E5%258D%2595%25E5%2588%2586%25E7%25BB%2584.html">VMenuGroups 菜单分组</a></li><li><a href="module-VPage%2520%25E9%25A1%25B5.html">VPage 页</a></li><li><a href="module-VPopover.html">VPopover</a></li><li><a href="module-VRadio%2520%25E5%258D%2595%25E9%2580%2589.html">VRadio 单选</a></li><li><a href="module-VRatio%2520%25E7%25AD%2589%25E6%25AF%2594%25E4%25BE%258B%25E7%25BC%25A9%25E6%2594%25BE%25E5%25AE%25B9%25E5%2599%25A8.html">VRatio 等比例缩放容器</a></li><li><a href="module-VRetinaImage%2520%25E6%258C%2587%25E4%25BB%25A4.html">VRetinaImage 指令</a></li><li><a href="module-VRow%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E8%25A1%258C.html">VRow 栅格布局 行</a></li><li><a href="module-VScrollView%2520%25E6%25BB%259A%25E5%258A%25A8%25E8%25A7%2586%25E5%259B%25BE.html">VScrollView 滚动视图</a></li><li><a href="module-VSearchBar%2520%25E6%2590%259C%25E7%25B4%25A2%25E6%25A0%258F.html">VSearchBar 搜索栏</a></li><li><a href="module-VSearchBrand%2520%25E5%2593%2581%25E7%2589%258Csearch.html">VSearchBrand 品牌search</a></li><li><a href="module-VSearchClerk%2520%25E7%25BB%258F%25E6%2589%258B%25E4%25BA%25BAsearch.html">VSearchClerk 经手人search</a></li><li><a href="module-VSearchDealer%252520%2525E5%2525BE%252580%2525E6%25259D%2525A5%2525E5%25258D%252595%2525E4%2525BD%25258Dsearch.html">VSearchDealer 往来单位search</a></li><li><a href="module-VSearchDealerForReport%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealerForReport 往来单位search</a></li><li><a href="module-VSearchDealerType%2520%25E5%25AE%25A2%25E6%2588%25B7%25E7%25BA%25A7%25E5%2588%25ABsearch.html">VSearchDealerType 客户级别search</a></li><li><a href="module-VSearchDeals%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDeals 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E5%2595%2586%25E5%2593%2581search.html">VSearchDepartment 商品search</a></li><li><a href="module-VSearchDepartment%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDepartment 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E9%2583%25A8%25E9%2597%25A8search.html">VSearchDepartment 部门search</a></li><li><a href="module-VSearchStock%2520%25E4%25BB%2593%25E5%25BA%2593search.html">VSearchStock 仓库search</a></li><li><a href="module-VSelect%2520%25E4%25B8%258B%25E6%258B%2589%25E6%25A1%2586.html">VSelect 下拉框</a></li><li><a href="module-VSimpleDialog%2520%25E6%25A8%25A1%25E6%2580%2581%25E6%25A1%2586.html">VSimpleDialog 模态框</a></li><li><a href="module-VSubtext%2520%25E4%25BA%258C%25E7%25BA%25A7%25E6%2596%2587%25E6%259C%25AC.html">VSubtext 二级文本</a></li><li><a href="module-VSwitch%2520%25E5%25BC%2580%25E5%2585%25B3.html">VSwitch 开关</a></li><li><a href="module-VTabs%2520%25E9%25A1%25B5%25E7%25AD%25BE.html">VTabs 页签</a></li><li><a href="module-VText%2520%25E6%2596%2587%25E6%259C%25AC.html">VText 文本</a></li><li><a href="module-VToolBar%2520%25E5%25B7%25A5%25E5%2585%25B7%25E6%25A0%258F.html">VToolBar 工具栏</a></li><li><a href="module-VTree%2520%25E6%25A0%2591%25E5%25BD%25A2.html">VTree 树形</a></li></ul><h3>Classes</h3><ul><li><a href="Sortable.html">Sortable</a></li></ul><h3>Mixins</h3><ul><li><a href="CoverMixin.html">CoverMixin</a></li><li><a href="flexItemMixin.html">flexItemMixin</a></li><li><a href="SearchMixin.html">SearchMixin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#onFilterClick">onFilterClick</a></li><li><a href="global.html#props">props</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Mar 28 2019 11:13:45 GMT+0800 (GMT+08:00)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

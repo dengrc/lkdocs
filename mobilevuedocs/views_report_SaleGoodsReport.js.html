@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: views/report/SaleGoodsReport.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: views/report/SaleGoodsReport.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define([
+    "dojo/_base/declare",
+    "mobile/vue/utils/echartsHalper",
+    "dojo/date/stamp",
+    "mobile/utils/DateHelper",
+    "mobile/utils/formatter",
+    "../QueryBase"
+], function (declare, echartsHalper, stamp, DateHelper, formatter, QueryBase) {
+    return declare([QueryBase], {
+        init: function () {
+            this.inherited(arguments);
+            this.vueContent = this.addVue({
+                el: this.vuePageEl,
+                mixins: QueryBase.vueMixins,
+                data: function () {
+                    return {
+                        title: "商品销售分析",
+                        isActiveList: true,
+                        filterName: "SaleGoodsReportFilter",
+                        reportparam: {
+                            pagerow: 10,
+                            pagenumber: 0,
+                            pagetype: "erp",
+                            orders: 'qty desc'
+                        },
+                        conditionparam: {
+                            "begindate": DateHelper.getDateRange(2).begindate,
+                            "enddate": DateHelper.getDateRange(2).enddate,
+                            "dfullname": "",
+                            "cfullname": "",
+                            "sfullname": "",
+                            "showtree": "0",
+                            "gfullname": "",
+                            "fromsys": "-1",
+                            "isgift": "-1",
+                            //"ifred": false,
+                            "onlyshowreturn": "0",
+                            "pageid": "sale_sta_gid",
+                            "ispromotion": "-1",
+                            "rankflag": 0,
+                            "billtypes": "-1",
+                            "billtype": "",
+                            "rankType": 1,
+                            "gid": "",
+                            "gnode": "",
+                            "sid": "",
+                            "snode": "",
+                            "cid": "",
+                            "cnode": "",
+                            "did": "",
+                            "showline": false,
+                            "ifred": false,
+                            "dnode": "",
+                            "brandid": ""
+                        },
+                        //取值范围 前十名 后十名
+                        rangeValue: 1,
+                        rangeOptions: [{
+                            value: 1,
+                            label: '前十'
+                        },
+                        {
+                            value: 0,
+                            label: '后十'
+                        }
+                        ],
+                        //排序方式
+                        sortValue: 0,
+                        sortOptions: [{
+                            value: 'qty asc',
+                            label: '销售数量升序'
+                        },
+                        {
+                            value: 'qty desc',
+                            label: '销售数量降序'
+                        },
+                        {
+                            value: 'salediscountmoney asc',
+                            label: '销售金额升序'
+                        },
+                        {
+                            value: 'salediscountmoney desc',
+                            label: '销售金额降序'
+                        },
+                        {
+                            value: 'profit asc',
+                            label: '毛利升序'
+                        },
+                        {
+                            value: 'profit desc',
+                            label: '毛利降序'
+                        }
+                        ],
+                        //默认查询数据日期范围 1-本周 0-今日
+                        dateTypeValue: 6,
+                        dateTypeOptions: [
+                            {
+                                value: 0,
+                                label: '今日'
+                            },
+                            {
+                                value: 1,
+                                label: '昨日'
+                            },
+                            {
+                                value: 2,
+                                label: '本周'
+                            },
+                            {
+                                value: 3,
+                                label: '上周'
+                            },
+                            {
+                                value: 4,
+                                label: '本月'
+                            },
+                            {
+                                value: 5,
+                                label: '上月'
+                            },
+                            {
+                                value: 6,
+                                label: '自定义'
+                            }
+                        ],
+                        //默认排序方式 1按数量 0-按金额
+                        dateRepValue: 0,
+                        dateRepOptions: [{
+                            value: 0,
+                            label: '销售数量'
+                        },
+                        {
+                            value: 1,
+                            label: '销售金额'
+                        }
+                        ],
+                        chartOptions: null,
+                        chartDatsource: [],
+                        chartDataParams: [],
+                        sumData: { qty: 0, salediscountmoney: 0, profit: 0 }
+                    }
+                },
+                methods: {
+                    onStart: function () {
+                        this.isActiveList = true;
+                        this.inherited(arguments);
+                    },
+                    dataHandler: function (data) {
+                        data.datasource.forEach(function (item) {
+                            item._expand = false
+                        });
+                        return data
+                    },
+                    expandItem: function (data) {
+                        data._expand = !data._expand;
+                        this.$refs.recyclist.resize();
+                    },
+                    onItemClick: function (data) {
+                        this.startView("SaleReport", Object.assign({}, data, {
+                            did: this.conditionparam.did,
+                            dfullname: this.conditionparam.dfullname,
+                            cfullname: this.conditionparam.cfullname,
+                            cid: this.conditionparam.cid,
+                            begindate: this.conditionparam.begindate,
+                            enddate: this.conditionparam.enddate
+                        }));
+                    },
+                    /**
+                     * 展示数据列表
+                     * **/
+                    showList: function () {
+                        this.conditionparam.pageid = "sale_sta_gid";
+                        delete this.conditionparam.rankType;
+                        delete this.conditionparam.rankflag;
+                        this.doQuery();
+                        this.isActiveList = true;
+                    },
+                    onQueryResult: function (data, param) {
+                        if (this.liststore.sumdataKey &amp;&amp; data[this.liststore.sumdataKey]) {
+                            for (var key in this.sumData) {
+                                this.sumData[key] = data[this.liststore.sumdataKey][key];
+                            }
+                        }
+                    },
+                    /**
+                     * 查询结束后执行
+                     * **/
+                    onQueryResult: function (data, param) {
+                        var datasource = data.datasource;
+                        if (!this.isActiveList) {
+                            //按金额排序时的图形数据
+                            if (this.dateRepValue == 1) {
+                                this.chartDatsource = echartsHalper.parsePieData(datasource, "salediscountmoney", "gfullname");
+                            }
+                            //按数量排序时的图形数据
+                            if (param.conditionparam.pageid == "sale_sta_gidrank" &amp;&amp; this.dateRepValue == 0) {
+                                this.chartDatsource = echartsHalper.parsePieData(datasource, "qty", "gfullname");
+                            }
+                            //绑定图形数据
+                            this.chartOptions = echartsHalper.parsePieOptions({
+                                series: [{
+                                    name: "商品名称",
+                                    radius: ['35%', '65%'],
+                                    data: this.chartDatsource
+                                }]
+                            });
+                            this.$nextTick(function () {
+                                this.chartDataParams = echartsHalper.getPieChartDataParams(this.$refs.saleData.chart)
+                            })
+                        }
+                        this.inherited(arguments);
+                        if (param.conditionparam.pageid == "sale_sta_gid") {
+                            this.sumData["salediscountmoney"] = data[this.liststore.sumdataKey]["totalmoney"];
+                        }
+                    },
+                    /**
+                     * 显示图表
+                     * **/
+                    showChart: function () {
+                        this.conditionparam.rankflag = this.dateRepValue;
+                        this.conditionparam.rankType = this.rangeValue;
+                        this.conditionparam.pageid = "sale_sta_gidrank";
+                        this.isActiveList = false;
+                        this.reportparam.pagerow = 10;
+                        this.doQuery();
+                    },
+                    doQuery: function () {
+                        if (this.conditionparam.gfullname == '') {
+                            this.conditionparam.gid = ''
+                            this.conditionparam.gnode = ''
+                        }
+                        this.inherited(arguments);
+                    },
+                    /**
+                     * 切换查询日期
+                     * **/
+                    onDateTypeOptionChanged: function (dateType) {
+                        this.dateTypeValue = dateType;
+                        var isQuery = true;
+                        switch (dateType) {
+                            case 0:
+                                this.conditionparam.begindate = DateHelper.getDateRange("today").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("today").enddate;
+                                break;
+                            case 1:
+                                this.conditionparam.begindate = DateHelper.getDateRange("yesterday").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("yesterday").enddate;
+                                break;
+                            case 2:
+                                this.conditionparam.begindate = DateHelper.getDateRange("thisWeek").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("thisWeek").enddate;
+                                break;
+                            case 3:
+                                this.conditionparam.begindate = DateHelper.getDateRange("lastWeek").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("lastWeek").enddate;
+                                break;
+                            case 4:
+                                this.conditionparam.begindate = DateHelper.getDateRange("thisMonth").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("thisMonth").enddate;
+                                break;
+                            case 5:
+                                this.conditionparam.begindate = DateHelper.getDateRange("lastMonth").begindate;
+                                this.conditionparam.enddate = DateHelper.getDateRange("lastMonth").enddate;
+                                break;
+                            case 6:
+                                isQuery = false;
+                                break;
+                        }
+                        if (isQuery) {
+                            this.doQuery();
+                        } else {
+                            this.onFilterClick();
+                        }
+                    },
+                    // 切换金额数量
+                    onDateRepOptionChanged: function () {
+                        this.conditionparam.rankflag = this.dateRepValue;
+                        this.doQuery();
+                    },
+                    /**
+                     * 切换排序类型
+                     * **/
+                    onRangeTypeOptionChanged: function (rankType) {
+                        this.conditionparam.rankType = rankType;
+                        this.doQuery();
+                    },
+                    /**
+                     * 切换排序规则
+                     * **/
+                    onSortOptionChanged: function (sortValue) {
+                        this.doQuery();
+                    },
+                    getFilterParam: function () {
+                        var param = this.inherited(arguments);
+                        param.isList = this.isActiveList;
+                        return param
+                    },
+                    onViewResult: function (requestViewName, result, requestParam) {
+                        if (requestViewName == this.filterName) {
+                            this.dateTypeValue = 6;
+                        } else if (requestViewName == 'DirTreeSearch' &amp;&amp; result) {
+                            if (result.fullname == "全部商品") {
+                                this.conditionparam.gfullname = "";
+                                this.conditionparam.gnode = "";
+                                this.conditionparam.gid = ""
+                            } else {
+                                this.conditionparam.gfullname = result.fullname;
+                                this.conditionparam.gnode = result.tnode;
+                                this.conditionparam.gid = result.gid
+                            }
+                            this.doQuery()
+                        }
+                        this.inherited(arguments);
+                    }
+                }
+            })
+        }
+    })
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-_BaseEditor.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseEditor.vueMixins" vue 混合对象</a></li><li><a href="module-_BaseInfo.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseInfo.vueMixins" vue 混合对象</a></li><li><a href="module-_FilterBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"FilterBase.vueMixins" vue 混合对象</a></li><li><a href="module-_QueryBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"QueryBase.vueMixins" vue 混合对象</a></li><li><a href="module-_ViewBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"ViewBase.vueMixins" vue 混合对象</a></li><li><a href="module-BaseEditor%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseEditor vue 页面</a></li><li><a href="module-BaseInfo%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseInfo vue 页面</a></li><li><a href="module-FilterBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">FilterBase vue 页面</a></li><li><a href="module-ListStore%2520%25E5%2588%2586%25E9%25A1%25B5%25E6%2595%25B0%25E6%258D%25AE%25E6%25BA%2590.html">ListStore 分页数据源</a></li><li><a href="module-QueryBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">QueryBase vue 页面</a></li><li><a href="module-VArrow%2520%25E7%25AE%25AD%25E5%25A4%25B4.html">VArrow 箭头</a></li><li><a href="module-VAvatar%2520%25E5%25A4%25B4%25E5%2583%258F%25E3%2580%2581%25E5%259B%25BE%25E7%2589%2587.html">VAvatar 头像、图片</a></li><li><a href="module-VButton%2520%25E6%258C%2589%25E9%2592%25AE.html">VButton 按钮</a></li><li><a href="module-VCalendar%2520%25E6%2597%25A5%25E5%258E%2586.html">VCalendar 日历</a></li><li><a href="module-VCheckBox%2520%25E5%25A4%258D%25E9%2580%2589%25E6%25A1%2586.html">VCheckBox 复选框</a></li><li><a href="module-VCol%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%2588%2597.html">VCol 栅格布局 列</a></li><li><a href="module-VContainer%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%25AE%25B9%25E5%2599%25A8.html">VContainer 栅格布局 容器</a></li><li><a href="module-VDateNav%2520%25E6%2597%25A5%25E6%259C%259F%25E5%25AF%25BC%25E8%2588%25AA.html">VDateNav 日期导航</a></li><li><a href="module-VFieldSet%2520%25E5%25AD%2597%25E6%25AE%25B5%25E7%25BB%2584.html">VFieldSet 字段组</a></li><li><a href="module-VFlexBox%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AE%25B9%25E5%2599%25A8.html">VFlexBox flex 布局容器</a></li><li><a href="module-VFlexItem%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AD%2590%25E9%25A1%25B9.html">VFlexItem flex 布局子项</a></li><li><a href="module-VFromRow%2520%25E8%25A1%25A8%25E5%258D%2595%25E8%25A1%258C.html">VFromRow 表单行</a></li><li><a href="module-VHeader%2520%25E6%25A0%2587%25E9%25A2%2598%25E6%25A0%258F.html">VHeader 标题栏</a></li><li><a href="module-VIcon%2520%25E5%259B%25BE%25E6%25A0%2587.html">VIcon 图标</a></li><li><a href="module-ViewBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">ViewBase vue 页面</a></li><li><a href="module-VList%2520%25E5%2588%2597%25E8%25A1%25A8.html">VList 列表</a></li><li><a href="module-VListitem%2520%25E5%2588%2597%25E8%25A1%25A8%25E9%25A1%25B9.html">VListitem 列表项</a></li><li><a href="module-VMap%2520%25E5%259C%25B0%25E5%259B%25BE.html">VMap 地图</a></li><li><a href="module-VMenuGroups%2520%25E8%258F%259C%25E5%258D%2595%25E5%2588%2586%25E7%25BB%2584.html">VMenuGroups 菜单分组</a></li><li><a href="module-VPage%2520%25E9%25A1%25B5.html">VPage 页</a></li><li><a href="module-VPopover.html">VPopover</a></li><li><a href="module-VRadio%2520%25E5%258D%2595%25E9%2580%2589.html">VRadio 单选</a></li><li><a href="module-VRatio%2520%25E7%25AD%2589%25E6%25AF%2594%25E4%25BE%258B%25E7%25BC%25A9%25E6%2594%25BE%25E5%25AE%25B9%25E5%2599%25A8.html">VRatio 等比例缩放容器</a></li><li><a href="module-VRetinaImage%2520%25E6%258C%2587%25E4%25BB%25A4.html">VRetinaImage 指令</a></li><li><a href="module-VRow%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E8%25A1%258C.html">VRow 栅格布局 行</a></li><li><a href="module-VScrollView%2520%25E6%25BB%259A%25E5%258A%25A8%25E8%25A7%2586%25E5%259B%25BE.html">VScrollView 滚动视图</a></li><li><a href="module-VSearchBar%2520%25E6%2590%259C%25E7%25B4%25A2%25E6%25A0%258F.html">VSearchBar 搜索栏</a></li><li><a href="module-VSearchBrand%2520%25E5%2593%2581%25E7%2589%258Csearch.html">VSearchBrand 品牌search</a></li><li><a href="module-VSearchClerk%2520%25E7%25BB%258F%25E6%2589%258B%25E4%25BA%25BAsearch.html">VSearchClerk 经手人search</a></li><li><a href="module-VSearchDealer%252520%2525E5%2525BE%252580%2525E6%25259D%2525A5%2525E5%25258D%252595%2525E4%2525BD%25258Dsearch.html">VSearchDealer 往来单位search</a></li><li><a href="module-VSearchDealerForReport%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealerForReport 往来单位search</a></li><li><a href="module-VSearchDealerType%2520%25E5%25AE%25A2%25E6%2588%25B7%25E7%25BA%25A7%25E5%2588%25ABsearch.html">VSearchDealerType 客户级别search</a></li><li><a href="module-VSearchDeals%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDeals 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E5%2595%2586%25E5%2593%2581search.html">VSearchDepartment 商品search</a></li><li><a href="module-VSearchDepartment%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDepartment 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E9%2583%25A8%25E9%2597%25A8search.html">VSearchDepartment 部门search</a></li><li><a href="module-VSearchStock%2520%25E4%25BB%2593%25E5%25BA%2593search.html">VSearchStock 仓库search</a></li><li><a href="module-VSelect%2520%25E4%25B8%258B%25E6%258B%2589%25E6%25A1%2586.html">VSelect 下拉框</a></li><li><a href="module-VSimpleDialog%2520%25E6%25A8%25A1%25E6%2580%2581%25E6%25A1%2586.html">VSimpleDialog 模态框</a></li><li><a href="module-VSubtext%2520%25E4%25BA%258C%25E7%25BA%25A7%25E6%2596%2587%25E6%259C%25AC.html">VSubtext 二级文本</a></li><li><a href="module-VSwitch%2520%25E5%25BC%2580%25E5%2585%25B3.html">VSwitch 开关</a></li><li><a href="module-VTabs%2520%25E9%25A1%25B5%25E7%25AD%25BE.html">VTabs 页签</a></li><li><a href="module-VText%2520%25E6%2596%2587%25E6%259C%25AC.html">VText 文本</a></li><li><a href="module-VToolBar%2520%25E5%25B7%25A5%25E5%2585%25B7%25E6%25A0%258F.html">VToolBar 工具栏</a></li><li><a href="module-VTree%2520%25E6%25A0%2591%25E5%25BD%25A2.html">VTree 树形</a></li></ul><h3>Classes</h3><ul><li><a href="Sortable.html">Sortable</a></li></ul><h3>Mixins</h3><ul><li><a href="CoverMixin.html">CoverMixin</a></li><li><a href="flexItemMixin.html">flexItemMixin</a></li><li><a href="SearchMixin.html">SearchMixin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#onFilterClick">onFilterClick</a></li><li><a href="global.html#props">props</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Mar 28 2019 11:13:45 GMT+0800 (GMT+08:00)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

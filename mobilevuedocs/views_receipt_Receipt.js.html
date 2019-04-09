@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: views/receipt/Receipt.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: views/receipt/Receipt.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define([
+    "dojo/_base/declare",
+    "mobile/store/request",
+    "mobile/views/bill0/BillHelper",
+    "mobile/store/config",
+    "mobile/widgets/AlertDialog",
+    "../ViewBase"
+], function (declare, request, BillHelper, config, AlertDialog, ViewBase) {
+    return declare([ViewBase], {
+        init: function () {
+            this.inherited(arguments);
+            this.vueContent = this.addVue({
+                el: this.vuePageEl,
+                mixins: ViewBase.vueMixins,
+                data: function () {
+                    return {
+                        title: "二维码收款",
+                        money: 0,
+                        qrcode: "about:blank",
+                        paytype: 0,
+                        billid: 0,
+                        billtype: 0,
+                        wxaccountid: 0,
+                        wxfullname: '',
+                        zfbaccountid: 0,
+                        zfbfullname: '',
+                        receiptbilltype: 0,
+                        receiptbillid: 0,
+                        receiptbilldata: {},//收款单据
+                        billdata: {},//收款单
+                        intervalid: 0
+                        //name:"123",
+                        //status:"支付中..."
+                    }
+                },
+                methods: {
+                    onClose: function () {
+                        if (self.billtype == 607) {
+                            this.$view.startView("RetailHistory", {});
+                            return;
+                        }
+                        this.back();
+                    },
+                    back: function () {
+                        if (this.intervalid) {
+                            clearInterval(this.intervalid);
+                        }
+                        this.inherited(arguments);
+                    },
+                    /**
+                     * 获取收款单数据
+                     * **/
+                    getBillData: function (billid) {
+                        var self = this;
+                        BillHelper.getfulldata({ billid: billid, billtype: 801 }, this.$view).then(function (data) {
+                            self.billdata = data;
+                        }, function (ret) {
+                            AlertDialog(ret &amp;&amp; ret.msg || '网络异常请稍后再试');
+                        });
+                    },
+                    /**
+                     * 获取支付宝账户
+                     * **/
+                    getZfbAccount: function () {
+                        var self = this;
+                        BillHelper.getZfbAccount(null, this.$view).then(function (rst) {
+                            if (!rst || typeof (rst) == "undefined") {
+                                self.zfbaccountid = 0;
+                                self.zfbfullname = "";
+                                return;
+                            }
+                            self.zfbaccountid = rst.aid;
+                            self.zfbfullname = rst.fullname;
+                        }, function (ret) {
+                            AlertDialog(ret &amp;&amp; ret.msg || '网络异常请稍后再试');
+                        });
+                    },
+                    /**
+                     * 获取微信账户
+                     * **/
+                    getWxAccount: function () {
+                        var self = this;
+                        BillHelper.getWxAccount(null, this.$view).then(function (rst) {
+                            if (!rst || typeof (rst) == "undefined") {
+                                self.wxaccountid = 0;
+                                self.wxfullname = "";
+                                return;
+                            }
+                            self.wxaccountid = rst.aid;
+                            self.wxfullname = rst.fullname;
+                        }, function (ret) {
+                            AlertDialog(ret &amp;&amp; ret.msg || '网络异常请稍后再试');
+                        });
+                    },
+
+                    onStart: function () {
+                        var cfg = config.getErpCfg(this);
+                        if (cfg.EnableWxMicroPay) {
+                            this.getWxAccount();
+                        }
+                        if (cfg.EnableZfbMicroPay) {
+                            this.getZfbAccount();
+                        }
+                        var p = this.getParam();
+                        this.billdata = p.billData;
+                        if (!this.billdata || !this.billdata.header || !this.billdata.header.billmoney) {
+                            this.$view.showMsg("收款数据错误");
+                            return;
+                        }
+                        this.receiptbilldata = this.billdata.detail.datasource[0];
+                        //收款金额
+                        this.money = this.billdata.header.money1;
+                        //支付方式
+                        this.paytype = p.onlinepaytype == 1 ? 1 : 8;
+                        this.billid = p.billid;
+                        this.billtype = p.billtype;
+                        this.billcode = p.billcode;
+                        this.receiptbilltype = p.callerbilltype;
+                        this.receiptbillid = this.receiptbilldata.billid;
+                        this.getBillData(p.billid);
+                        //获取支付二维码的参数
+                        var param = {
+                            billid: p.billid,
+                            billtype: p.billtype,
+                            billcode: p.billcode,
+                            paymoney: this.money,
+                            paytype: this.paytype
+                        };
+                        this.getPayQrCode(param);
+                        this.inherited(arguments);
+                    },
+                    /**
+                     * 获取支付二维码
+                     * **/
+                    getPayQrCode: function (p) {
+                        this.qrcode = "about:blank";
+                        var self = this;
+                        if (!p) {
+                            p = {
+                                billid: self.billid,
+                                billtype: self.billtype,
+                                billcode: self.billcode,
+                                paymoney: self.money,
+                                paytype: self.paytype
+                            };
+                        }
+                        request("cc.erp.bll.bill.erppayway.getpayqrcode", p).then(function (ret) {
+                            self.qrcode = ret.qrcode;
+                            //监测支付状态
+                            self.checkIsPayedSuccess(ret.payid);
+                        }, function (ret) {
+                            AlertDialog(ret &amp;&amp; ret.msg || '网络异常请稍后再试');
+                        });
+                    },
+                    /**
+                     * 修改收款方式
+                     * **/
+                    changePayTye: function (paytype) {
+                        if (paytype > 0) {
+                            this.paytype = paytype;
+                            this.billdata.header.aid1 = paytype == 1 ? this.wxaccountid : this.zfbaccountid;
+                            this.billdata.header.afullname1 = paytype == 1 ? this.wxfullname : this.zfbaccountid;
+                            clearInterval(this.intervalid);
+                            this.getPayQrCode();
+                        }
+                        //else {
+                        //    this.finish({ billid: this.receiptbillid, billtype: this.receiptbilltype, billData: this.billdata });
+                        //}
+                    },
+                    /**
+                     * 监视收款是否成功
+                     * **/
+                    checkIsPayedSuccess: function (payid) {
+                        var self = this;
+                        this.intervalid = setInterval(function () {
+                            request("cc.erp.bll.bill.erppayway.checkissuccess", { payid: payid }, false, this.$view).then(function (result) {
+                                if (result &amp;&amp; result.issuccess == true) {
+                                    if (self.intervalid) {
+                                        clearInterval(self.intervalid);
+                                    }
+                                    //AlertDialog("支付成功");
+                                    self.finish({ billid: self.receiptbillid, billtype: self.receiptbilltype, billData: self.billdata });
+                                }
+                            },function (ret) {
+                                AlertDialog(ret &amp;&amp; ret.msg || '网络异常请稍后再试');
+                            });
+                        }, 5000);
+                    },
+                }
+            })
+        }
+    })
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-_BaseEditor.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseEditor.vueMixins" vue 混合对象</a></li><li><a href="module-_BaseInfo.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"BaseInfo.vueMixins" vue 混合对象</a></li><li><a href="module-_FilterBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"FilterBase.vueMixins" vue 混合对象</a></li><li><a href="module-_QueryBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"QueryBase.vueMixins" vue 混合对象</a></li><li><a href="module-_ViewBase.vueMixins_%2520vue%2520%25E6%25B7%25B7%25E5%2590%2588%25E5%25AF%25B9%25E8%25B1%25A1.html">"ViewBase.vueMixins" vue 混合对象</a></li><li><a href="module-BaseEditor%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseEditor vue 页面</a></li><li><a href="module-BaseInfo%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">BaseInfo vue 页面</a></li><li><a href="module-FilterBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">FilterBase vue 页面</a></li><li><a href="module-ListStore%2520%25E5%2588%2586%25E9%25A1%25B5%25E6%2595%25B0%25E6%258D%25AE%25E6%25BA%2590.html">ListStore 分页数据源</a></li><li><a href="module-QueryBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">QueryBase vue 页面</a></li><li><a href="module-VArrow%2520%25E7%25AE%25AD%25E5%25A4%25B4.html">VArrow 箭头</a></li><li><a href="module-VAvatar%2520%25E5%25A4%25B4%25E5%2583%258F%25E3%2580%2581%25E5%259B%25BE%25E7%2589%2587.html">VAvatar 头像、图片</a></li><li><a href="module-VButton%2520%25E6%258C%2589%25E9%2592%25AE.html">VButton 按钮</a></li><li><a href="module-VCalendar%2520%25E6%2597%25A5%25E5%258E%2586.html">VCalendar 日历</a></li><li><a href="module-VCheckBox%2520%25E5%25A4%258D%25E9%2580%2589%25E6%25A1%2586.html">VCheckBox 复选框</a></li><li><a href="module-VCol%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%2588%2597.html">VCol 栅格布局 列</a></li><li><a href="module-VContainer%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E5%25AE%25B9%25E5%2599%25A8.html">VContainer 栅格布局 容器</a></li><li><a href="module-VDateNav%2520%25E6%2597%25A5%25E6%259C%259F%25E5%25AF%25BC%25E8%2588%25AA.html">VDateNav 日期导航</a></li><li><a href="module-VFieldSet%2520%25E5%25AD%2597%25E6%25AE%25B5%25E7%25BB%2584.html">VFieldSet 字段组</a></li><li><a href="module-VFlexBox%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AE%25B9%25E5%2599%25A8.html">VFlexBox flex 布局容器</a></li><li><a href="module-VFlexItem%2520flex%2520%25E5%25B8%2583%25E5%25B1%2580%25E5%25AD%2590%25E9%25A1%25B9.html">VFlexItem flex 布局子项</a></li><li><a href="module-VFromRow%2520%25E8%25A1%25A8%25E5%258D%2595%25E8%25A1%258C.html">VFromRow 表单行</a></li><li><a href="module-VHeader%2520%25E6%25A0%2587%25E9%25A2%2598%25E6%25A0%258F.html">VHeader 标题栏</a></li><li><a href="module-VIcon%2520%25E5%259B%25BE%25E6%25A0%2587.html">VIcon 图标</a></li><li><a href="module-ViewBase%2520vue%2520%25E9%25A1%25B5%25E9%259D%25A2.html">ViewBase vue 页面</a></li><li><a href="module-VList%2520%25E5%2588%2597%25E8%25A1%25A8.html">VList 列表</a></li><li><a href="module-VListitem%2520%25E5%2588%2597%25E8%25A1%25A8%25E9%25A1%25B9.html">VListitem 列表项</a></li><li><a href="module-VMap%2520%25E5%259C%25B0%25E5%259B%25BE.html">VMap 地图</a></li><li><a href="module-VMenuGroups%2520%25E8%258F%259C%25E5%258D%2595%25E5%2588%2586%25E7%25BB%2584.html">VMenuGroups 菜单分组</a></li><li><a href="module-VPage%2520%25E9%25A1%25B5.html">VPage 页</a></li><li><a href="module-VPopover.html">VPopover</a></li><li><a href="module-VRadio%2520%25E5%258D%2595%25E9%2580%2589.html">VRadio 单选</a></li><li><a href="module-VRatio%2520%25E7%25AD%2589%25E6%25AF%2594%25E4%25BE%258B%25E7%25BC%25A9%25E6%2594%25BE%25E5%25AE%25B9%25E5%2599%25A8.html">VRatio 等比例缩放容器</a></li><li><a href="module-VRetinaImage%2520%25E6%258C%2587%25E4%25BB%25A4.html">VRetinaImage 指令</a></li><li><a href="module-VRow%2520%25E6%25A0%2585%25E6%25A0%25BC%25E5%25B8%2583%25E5%25B1%2580%2520%25E8%25A1%258C.html">VRow 栅格布局 行</a></li><li><a href="module-VScrollView%2520%25E6%25BB%259A%25E5%258A%25A8%25E8%25A7%2586%25E5%259B%25BE.html">VScrollView 滚动视图</a></li><li><a href="module-VSearchBar%2520%25E6%2590%259C%25E7%25B4%25A2%25E6%25A0%258F.html">VSearchBar 搜索栏</a></li><li><a href="module-VSearchBrand%2520%25E5%2593%2581%25E7%2589%258Csearch.html">VSearchBrand 品牌search</a></li><li><a href="module-VSearchClerk%2520%25E7%25BB%258F%25E6%2589%258B%25E4%25BA%25BAsearch.html">VSearchClerk 经手人search</a></li><li><a href="module-VSearchDealer%252520%2525E5%2525BE%252580%2525E6%25259D%2525A5%2525E5%25258D%252595%2525E4%2525BD%25258Dsearch.html">VSearchDealer 往来单位search</a></li><li><a href="module-VSearchDealerForReport%2520%25E5%25BE%2580%25E6%259D%25A5%25E5%258D%2595%25E4%25BD%258Dsearch.html">VSearchDealerForReport 往来单位search</a></li><li><a href="module-VSearchDealerType%2520%25E5%25AE%25A2%25E6%2588%25B7%25E7%25BA%25A7%25E5%2588%25ABsearch.html">VSearchDealerType 客户级别search</a></li><li><a href="module-VSearchDeals%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDeals 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E5%2595%2586%25E5%2593%2581search.html">VSearchDepartment 商品search</a></li><li><a href="module-VSearchDepartment%2520%25E5%25B1%259E%25E6%2580%25A7search.html">VSearchDepartment 属性search</a></li><li><a href="module-VSearchDepartment%2520%25E9%2583%25A8%25E9%2597%25A8search.html">VSearchDepartment 部门search</a></li><li><a href="module-VSearchStock%2520%25E4%25BB%2593%25E5%25BA%2593search.html">VSearchStock 仓库search</a></li><li><a href="module-VSelect%2520%25E4%25B8%258B%25E6%258B%2589%25E6%25A1%2586.html">VSelect 下拉框</a></li><li><a href="module-VSimpleDialog%2520%25E6%25A8%25A1%25E6%2580%2581%25E6%25A1%2586.html">VSimpleDialog 模态框</a></li><li><a href="module-VSubtext%2520%25E4%25BA%258C%25E7%25BA%25A7%25E6%2596%2587%25E6%259C%25AC.html">VSubtext 二级文本</a></li><li><a href="module-VSwitch%2520%25E5%25BC%2580%25E5%2585%25B3.html">VSwitch 开关</a></li><li><a href="module-VTabs%2520%25E9%25A1%25B5%25E7%25AD%25BE.html">VTabs 页签</a></li><li><a href="module-VText%2520%25E6%2596%2587%25E6%259C%25AC.html">VText 文本</a></li><li><a href="module-VToolBar%2520%25E5%25B7%25A5%25E5%2585%25B7%25E6%25A0%258F.html">VToolBar 工具栏</a></li><li><a href="module-VTree%2520%25E6%25A0%2591%25E5%25BD%25A2.html">VTree 树形</a></li></ul><h3>Classes</h3><ul><li><a href="Sortable.html">Sortable</a></li></ul><h3>Mixins</h3><ul><li><a href="CoverMixin.html">CoverMixin</a></li><li><a href="flexItemMixin.html">flexItemMixin</a></li><li><a href="SearchMixin.html">SearchMixin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#onFilterClick">onFilterClick</a></li><li><a href="global.html#props">props</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Mar 28 2019 11:13:45 GMT+0800 (GMT+08:00)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
