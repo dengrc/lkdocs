@@ -3,10 +3,10 @@
   "example.js.map": "static/js/example.a6d865e0.js.map",
   "index.css": "static/css/index.bc905884.css",
   "index.css.map": "static/css/index.bc905884.css.map",
-  "index.js": "static/js/index.d1d13d08.js",
-  "index.js.map": "static/js/index.d1d13d08.js.map",
-  "static/js/0.32d629c0.chunk.js": "static/js/0.32d629c0.chunk.js",
-  "static/js/0.32d629c0.chunk.js.map": "static/js/0.32d629c0.chunk.js.map",
+  "index.js": "static/js/index.65e395ae.js",
+  "index.js.map": "static/js/index.65e395ae.js.map",
+  "static/js/0.714c52cd.chunk.js": "static/js/0.714c52cd.chunk.js",
+  "static/js/0.714c52cd.chunk.js.map": "static/js/0.714c52cd.chunk.js.map",
   "static/js/1.b4e4183b.chunk.js": "static/js/1.b4e4183b.chunk.js",
   "static/js/1.b4e4183b.chunk.js.map": "static/js/1.b4e4183b.chunk.js.map",
   "static/js/10.b6cff11a.chunk.js": "static/js/10.b6cff11a.chunk.js",
@@ -86,6 +86,6 @@
   "static\\media\\logo.svg": "static/media/logo.a2aa6d71.svg",
   "zh-cn.css": "static/css/zh-cn.bc905884.css",
   "zh-cn.css.map": "static/css/zh-cn.bc905884.css.map",
-  "zh-cn.js": "static/js/zh-cn.3d9c0d4f.js",
-  "zh-cn.js.map": "static/js/zh-cn.3d9c0d4f.js.map"
+  "zh-cn.js": "static/js/zh-cn.98b9d695.js",
+  "zh-cn.js.map": "static/js/zh-cn.98b9d695.js.map"
 }
