@@ -1,0 +1,2 @@
+webpackJsonp([4],{84:function(n,o){n.exports="## \u89c4\u8303\r\n\r\n* \u65b9\u6cd5\u5fc5\u987b function \u65b9\u5f0f\u58f0\u660e `\u56e0\u4e3a\u6253\u5305\u5de5\u5177\u4e0d\u652f\u6301`\r\n* data \u5fc5\u987b\u662f\u65b9\u6cd5\u8fd4\u56de\u503c\u7684\u5f62\u5f0f"}});
+//# sourceMappingURL=4.626b5d10.chunk.js.map

@@ -1,2 +1,0 @@
-webpackJsonp([9],{61:function(r,n){r.exports="## ChartMixin\r\n\r\n### \u65b9\u6cd5\r\n\r\n\u65b9\u6cd5 | \u8bf4\u660e\r\n:---------------|:-------------\r\naddChart(chartConfig) | \u6dfb\u52a0\u56fe\u8868\r\n`setChartConfig()` | \u8bbe\u7f6e\u56fe\u6807\u914d\u7f6e\r\ndoQueryChart(param) | \u67e5\u8be2\u56fe\u8868"}});
-//# sourceMappingURL=9.30010136.chunk.js.map
